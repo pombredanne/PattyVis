@@ -16,9 +16,10 @@
     "tests"
   ],
   "dependencies": {
-    "threejs": "dev",
+    "threejs": "*",
     "potree": "potree/potree",        
     "OrbitControls": "https://raw2.github.com/mrdoob/three.js/master/examples/js/controls/OrbitControls.js",
+    "PointerLockControls": "https://raw2.github.com/mrdoob/three.js/master/examples/js/controls/PointerLockControls.js",
     "dat-gui": "*",
     "stats.js": "*"    
   }

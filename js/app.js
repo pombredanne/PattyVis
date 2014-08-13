@@ -11,14 +11,11 @@ var mouse = {
 };
 var projector, raycaster;
 var pointcloud, pointcloudMaterial;
-var spStart, spEnd, sConnection;
-var placeStartMode = false;
-var placeEndMode = false;
 var cube, cameraCube, sceneCube;
 
 function loadSkybox() {
-	cameraCube = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 100000);
-	sceneCube = new THREE.Scene();
+//	cameraCube = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 100000);
+//	sceneCube = new THREE.Scene();
 
 	var path = "bower_components/potree/resources/textures/skybox/";
 	var format = ".jpg";
@@ -45,7 +42,7 @@ function loadSkybox() {
 	}),
 
 	mesh = new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), material);
-	sceneCube.add(mesh);
+	scene.add(mesh);
 }
 
 function initGUI() {
@@ -71,7 +68,7 @@ function initGUI() {
 
 function initThree() {
 	scene = new THREE.Scene();
-	camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+	camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
 
 	projector = new THREE.Projector();
 	raycaster = new THREE.Raycaster();
@@ -107,33 +104,15 @@ function initThree() {
 		color : 0xbb0000,
 		shading : THREE.FlatShading
 	});
-	spStart = new THREE.Mesh(sphereGeometry, sphereMaterial);
-	spEnd = new THREE.Mesh(sphereGeometry, sphereMaterial);
-	// spStart.position.set(-1.1,1.05,2);
-	// spEnd.position.set(1.3,1.0,1.15);
-	spStart.position.set(-2.2, 1.9, 1.66);
-	spEnd.position.set(0.02, 2, 2.64);
-	scene.add(spStart);
-	scene.add(spEnd);
 
-	var lc = new THREE.Color(0xff0000);
-	var lineGeometry = new THREE.Geometry();
-	lineGeometry.vertices.push(spStart.position.clone(), spEnd.position.clone());
-	lineGeometry.colors.push(lc, lc, lc);
-	var lineMaterial = new THREE.LineBasicMaterial({
-		vertexColors : THREE.VertexColors
-	});
-	sConnection = new THREE.Line(lineGeometry, lineMaterial);
-	scene.add(sConnection);
-
-	// controls
-	camera.position.set(4, 6, 10);
-	controls = new THREE.OrbitControls(camera, renderer.domElement);
-	controls.target.set(0, 3, 0);
-	camera.lookAt(controls.target);
-
-	document.addEventListener('mousemove', onDocumentMouseMove, false);
-	renderer.domElement.addEventListener('click', onClick, false);
+    // controls
+	var element = document.body;
+	element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
+	element.requestPointerLock();
+	camera.position.set(2, 0.5, 15);
+	controls = new THREE.PointerLockControls(camera);
+	controls.enabled = true;
+	scene.add(controls.getObject());
 }
 
 function createGrid(width, length, spacing) {
@@ -157,26 +136,13 @@ function createGrid(width, length, spacing) {
 	return line;
 }
 
-function onDocumentMouseMove(event) {
-	event.preventDefault();
-
-	mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-	mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-}
 
 function render() {
 	requestAnimationFrame(render);
 
-	camera.updateMatrixWorld(true);
+	controls.isOnObject( false );
 
-	vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
-	projector.unprojectVector(vector, camera);
-	raycaster.params = {
-		"PointCloud" : {
-			threshold : 0.1
-		}
-	};
-	raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
+	controls.update();
 
 	scene.traverse(function(object) {
 		if (object instanceof Potree.PointCloudOctree) {
@@ -184,35 +150,6 @@ function render() {
 		}
 	});
 
-	if (placeStartMode || placeEndMode) {
-		var intersects = raycaster.intersectObject(pointcloud, true);
-
-		if (intersects.length > 0) {
-			var I = intersects[0];
-
-			if (placeStartMode) {
-				spStart.position = I.point;
-			} else if (placeEndMode) {
-				spEnd.position = I.point;
-			}
-			sConnection.geometry.vertices[0].copy(spStart.position);
-			sConnection.geometry.vertices[1].copy(spEnd.position);
-			sConnection.geometry.verticesNeedUpdate = true;
-			sConnection.geometry.computeBoundingSphere();
-		}
-	}
-
-	// placing distance label
-	var labelPos = spStart.position.clone().add(spEnd.position).multiplyScalar(0.5);
-	projector.projectVector(labelPos, camera);
-	labelPos.x = (labelPos.x + 1) / 2 * window.innerWidth;
-	labelPos.y = -(labelPos.y - 1) / 2 * window.innerHeight;
-
-	var distance = spStart.position.distanceTo(spEnd.position);
-	var lblDistance = document.getElementById("lblDistance");
-	lblDistance.style.left = labelPos.x;
-	lblDistance.style.top = labelPos.y;
-	lblDistance.innerHTML = distance.toFixed(2);
 
 	var numVisibleNodes = pointcloud.numVisibleNodes;
 	var numVisiblePoints = pointcloud.numVisiblePoints;
@@ -220,8 +157,9 @@ function render() {
 	document.getElementById("lblNumVisiblePoints").innerHTML = "visible points: " + Potree.utils.addCommas(numVisiblePoints);
 
 	// render skybox
-	cameraCube.rotation.copy(camera.rotation);
-	renderer.render(sceneCube, cameraCube);
+//	camera.updateMatrixWorld(true);
+//	cameraCube.rotation.copy(camera.rotation);
+//    renderer.render(sceneCube, cameraCube);
 
 	renderer.render(scene, camera);
 };
@@ -229,21 +167,3 @@ function render() {
 initThree();
 initGUI();
 render();
-
-function placeStart() {
-	placeStartMode = true;
-	placeEndMode = false;
-}
-
-function placeEnd() {
-	placeStartMode = false;
-	placeEndMode = true;
-}
-
-function onClick() {
-	placeStartMode = false;
-	placeEndMode = false;
-
-	console.log(spStart.position);
-	console.log(spEnd.position);
-}
