@@ -15,6 +15,8 @@ module.exports = function (grunt) {
   // Time how long tasks take. Can help when optimizing build times
   require('time-grunt')(grunt);
 
+  var path = require('path');
+
   // Configurable paths for the application
   var appConfig = {
     app: require('./bower.json').appPath || 'app',
@@ -402,7 +404,16 @@ module.exports = function (grunt) {
         configFile: 'test/karma.conf.js',
         singleRun: true
       }
+    },
+
+    // documentation settings
+    dgeni: {
+      options: {
+        // Specify the base path used when resolving relative paths to source files
+        packages: [path.resolve('docs/PattyVis.js')]
+      }
     }
+
   });
 
 
@@ -432,6 +443,10 @@ module.exports = function (grunt) {
     'autoprefixer',
     'connect:test',
     'karma'
+  ]);
+
+  grunt.registerTask('doc', [
+  'dgeni'
   ]);
 
   grunt.registerTask('build', [

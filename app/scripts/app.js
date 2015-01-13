@@ -1,12 +1,7 @@
 'use strict';
 
 /**
- * @ngdoc overview
- * @name pattyApp
- * @description
- * # pattyApp
- *
- * Main module of the application.
+ * @description This is main app module
  */
 angular
   .module('pattyApp', [
